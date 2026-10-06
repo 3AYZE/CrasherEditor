@@ -42,14 +42,14 @@ public sealed partial class MainForm : Form
             if(!Confirm("You have unsaved changes. Restoring a backup will discard them. Continue?"))return;
             session.Plain=(byte[])committedPlain.Clone();pendingDangerous=false;ClearMaxAllCharacterSnapshot();ClearDraftInputsSilent();UpdatePendingUi();
         }
-        EnsureGameClosed();EnsureLoaded();
+        EnsureLoaded();
         string dir=Path.GetDirectoryName(session.Path),pattern=Path.GetFileName(session.Path)+".crasher_backup_*";
         FileInfo[] files=new DirectoryInfo(dir).GetFiles(pattern);
         if(files.Length==0)throw new InvalidOperationException("No automatic backup was found.");
         Array.Sort(files,delegate(FileInfo a,FileInfo b){return b.LastWriteTime.CompareTo(a.LastWriteTime);});
         string backup=files[0].FullName;
         SaveSession validated=OpenSpecificSave(backup,session.AccountId);
-        if(!Confirm("Restore the newest automatic backup?\n\n"+Path.GetFileName(backup)+"\n\nThe current save will be backed up again before restore."))return;
+        if(!Confirm("Restore the newest automatic backup?\n\n"+Path.GetFileName(backup)+"\n\nThe current save will be backed up again before restore.\n\nMake sure Castle Crashers is completely closed before continuing."))return;
         string safety=session.Path+".crasher_backup_before_restore_"+DateTime.Now.ToString("yyyyMMdd_HHmmss_fff",CultureInfo.InvariantCulture);
         File.Copy(session.Path,safety,true);File.Copy(backup,session.Path,true);
         validated.Path=session.Path;validated.Modified=File.GetLastWriteTime(session.Path);session=validated;committedPlain=(byte[])session.Plain.Clone();pendingDangerous=false;ClearMaxAllCharacterSnapshot();
@@ -63,11 +63,11 @@ public sealed partial class MainForm : Form
             if(!Confirm("You have unsaved changes. Restoring a backup will discard them. Continue?"))return;
             session.Plain=(byte[])committedPlain.Clone();pendingDangerous=false;ClearMaxAllCharacterSnapshot();ClearDraftInputsSilent();UpdatePendingUi();
         }
-        EnsureGameClosed();EnsureLoaded();
+        EnsureLoaded();
         string backup=SelectedBackupPath();
         if(!File.Exists(backup))throw new FileNotFoundException("The selected backup no longer exists.",backup);
         SaveSession validated=OpenSpecificSave(backup,session.AccountId);
-        if(!Confirm("Restore this backup?\n\n"+Path.GetFileName(backup)+"\n\nThe current save will be backed up again before restore."))return;
+        if(!Confirm("Restore this backup?\n\n"+Path.GetFileName(backup)+"\n\nThe current save will be backed up again before restore.\n\nMake sure Castle Crashers is completely closed before continuing."))return;
         string safety=session.Path+".crasher_backup_before_restore_"+DateTime.Now.ToString("yyyyMMdd_HHmmss",CultureInfo.InvariantCulture);
         File.Copy(session.Path,safety,true);File.Copy(backup,session.Path,true);
         validated.Path=session.Path;validated.Modified=File.GetLastWriteTime(session.Path);session=validated;committedPlain=(byte[])session.Plain.Clone();pendingDangerous=false;ClearMaxAllCharacterSnapshot();
@@ -75,10 +75,8 @@ public sealed partial class MainForm : Form
     }
 
     void DeleteSelectedBackup(){EnsureLoaded();string backup=SelectedBackupPath();if(!Confirm("Delete this backup file?\n\n"+Path.GetFileName(backup)))return;File.Delete(backup);RefreshBackups();SetStatus("Backup deleted: "+Path.GetFileName(backup));}
-    void OpenBackupFolder(){EnsureLoaded();Process.Start("explorer.exe",Path.GetDirectoryName(session.Path));}
     void EnsureLoaded(){if(session==null)throw new InvalidOperationException("Load the save first.");}
     int? ParseOptional(string key,int min,int max){string s=edits[key].Text.Trim();if(s.Length==0)return null;int n;if(!Int32.TryParse(s,NumberStyles.Integer,CultureInfo.InvariantCulture,out n))throw new InvalidOperationException(key+" must be a whole number.");if(n<min||n>max)throw new InvalidOperationException(key+" must be "+min+"–"+max+".");return n;}
-    static void EnsureGameClosed(){Process[] ps=Process.GetProcessesByName("castle");try{if(ps.Length>0)throw new InvalidOperationException("Close Castle Crashers before editing. The running game can overwrite cc_save.dat.");}finally{foreach(Process p in ps)p.Dispose();}}
 
     string SaveEncrypted()
     {
@@ -88,10 +86,7 @@ public sealed partial class MainForm : Form
         string stamp=DateTime.Now.ToString("yyyyMMdd_HHmmss_fff",CultureInfo.InvariantCulture);
         string backup=session.Path+".crasher_backup_"+stamp;
         File.Copy(session.Path,backup,true);
-        string temp=session.Path+".unlocker_tmp";
-        File.WriteAllBytes(temp,enc);
-        if(File.Exists(session.Path))File.Delete(session.Path);
-        File.Move(temp,session.Path);
+        File.WriteAllBytes(session.Path,enc);
         session.Modified=File.GetLastWriteTime(session.Path);
         return backup;
     }
@@ -105,5 +100,4 @@ public sealed partial class MainForm : Form
     }
     static int CharacterOffset(int i){return 0x40+i*0x30;}
     void SelectCharacter(int idx){foreach(ListViewItem item in characterList.Items){if((int)item.Tag==idx){item.Selected=true;characterList.Select();break;}}}
-    static SaveSession FindAndOpenSave(){List<SaveCandidate> candidates=GetCandidates();if(candidates.Count==0)throw new InvalidOperationException("Could not find Steam userdata\\<account>\\204360\\remote\\cc_save.dat");foreach(SaveCandidate s in candidates){try{return OpenSpecificSave(s.Path,s.AccountId);}catch(Exception ex){Log("Save candidate error: "+s.Path+" :: "+ex.Message);}}throw new InvalidOperationException("Found Castle Crashers save file(s), but none decrypted with a valid checksum for the detected Steam account(s).");}
 }

@@ -88,7 +88,7 @@ public sealed partial class MainForm : Form
 
     readonly Button loadButton = new Button();
     readonly Button refreshButton = new Button();
-    readonly Button folderButton = new Button();
+    readonly Button guideButton = new Button();
     readonly Button themeButton = new Button();
     readonly Button overviewApplyButton = new Button();
     readonly Button statsApplyButton = new Button();
@@ -129,14 +129,9 @@ public sealed partial class MainForm : Form
     Color Accent, Good, Warn, Danger, AccentTextColor, GoodTextColor, WarnTextColor, DangerTextColor, NeutralButton;
     Color HeaderButton, HeaderBorder, HeaderText, HeaderMuted, HeaderGood, HeaderWarn, TabInactive;
 
-    [DllImport("uxtheme.dll", CharSet = CharSet.Unicode)]
-    static extern int SetWindowTheme(IntPtr hWnd, string pszSubAppName, string pszSubIdList);
-    [DllImport("dwmapi.dll")]
-    static extern int DwmSetWindowAttribute(IntPtr hwnd, int dwAttribute, ref int pvAttribute, int cbAttribute);
-
     public MainForm()
     {
-        Text = "Crasher Unlocker V1.2";
+        Text = "Crasher Editor V1.3";
         try { Icon exeIcon = Icon.ExtractAssociatedIcon(Application.ExecutablePath); if (exeIcon != null) this.Icon = exeIcon; } catch { }
         LoadThemePreference();
         SetThemeColors();

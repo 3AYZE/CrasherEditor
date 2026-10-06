@@ -1,10 +1,10 @@
 # Castle Editor [Castle Crasher]
 
-## Crasher Editor V1.2
+## Crasher Editor V1.3
 
-Offline Castle Crashers save editor for your local Steam profile.
+Offline Castle Crashers save editor for your own local Steam profile.
 
-## Features
+### Features
 
 - Character unlocks
 - Level, XP, Gold, and supported stats
@@ -16,22 +16,30 @@ Offline Castle Crashers save editor for your local Steam profile.
 - Automatic backups and restore
 - Light and Dark themes
 
-## Supported limits
+### How to use
 
-- Level: 1–99
-- Strength: 1–25
-- Defense: 1–25
-- Magic: 1–25
-- Agility: 1–25
+1. Completely close Castle Crashers.
+2. Open Crasher Editor and click **Load Save**.
+3. Select your original `cc_save.dat` from:
+   `Steam\userdata\<account>\204360\remote\cc_save.dat`
+4. Make your changes.
+5. Press **Apply Changes**. A backup is created before the save is written.
 
-Crasher Editor edits only your own local save/profile and does not affect other players.
+Supported limits are Level 1–99 and combat stats 1–25.
 
-## Build from source
+### V1.3 trust / compatibility cleanup
 
-The source is in `src/`.
+V1.3 uses a user-selected save instead of scanning Steam accounts. It does not scan the Windows registry, enumerate running processes, launch Explorer, inject into Castle Crashers, modify process memory, or use native Windows theme APIs. The editor only reads/writes the save file the user selects and creates local backups beside it.
 
-Run `BUILD_CRASHER_EDITOR_V1_2.cmd` on Windows with .NET Framework 4.x available.
+If a save fails validation, check:
+`%TEMP%\Crasher_Editor_V1.3.log`
+
+### Build from source
+
+Run `BUILD_CRASHER_EDITOR_V1_3.cmd` on Windows with .NET Framework 4.x available.
 
 Output:
 
-`Crasher Editor V1.2.exe`
+`Crasher Editor V1.3.exe`
+
+GitHub Actions also builds the same public source and uploads the EXE as a workflow artifact. Tagged builds can publish the EXE to GitHub Releases automatically.

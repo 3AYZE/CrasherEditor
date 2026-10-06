@@ -2,7 +2,7 @@
 setlocal
 cd /d "%~dp0"
 
-title Crasher Editor V1.2 - Build
+title Crasher Editor V1.3 - Build
 
 set "CSC=%WINDIR%\Microsoft.NET\Framework64\v4.0.30319\csc.exe"
 if not exist "%CSC%" set "CSC=%WINDIR%\Microsoft.NET\Framework\v4.0.30319\csc.exe"
@@ -12,16 +12,17 @@ if not exist "%CSC%" (
   echo ERROR: Windows .NET Framework C# compiler was not found.
   echo Enable/install .NET Framework 4.x, then run this file again.
   echo.
+  if defined CI exit /b 1
   pause
   exit /b 1
 )
 
 echo.
-echo Building Crasher Editor V1.2...
+echo Building Crasher Editor V1.3...
 echo.
 
 "%CSC%" /nologo /target:winexe /platform:anycpu /optimize+ /debug- ^
-  /out:"%~dp0Crasher Editor V1.2.exe" ^
+  /out:"%~dp0Crasher Editor V1.3.exe" ^
   /reference:System.dll ^
   /reference:System.Core.dll ^
   /reference:System.Drawing.dll ^
@@ -49,18 +50,19 @@ echo.
 if errorlevel 1 (
   echo.
   echo BUILD FAILED.
+  if defined CI exit /b 1
   pause
   exit /b 1
 )
 
 echo.
 echo ==========================================
-echo  Crasher Editor V1.2 build complete
+echo  Crasher Editor V1.3 build complete
 echo ==========================================
 echo.
 echo Output:
-echo "%~dp0Crasher Editor V1.2.exe"
+echo "%~dp0Crasher Editor V1.3.exe"
 echo.
-echo Optional: add your own CUI.ico to the folder and compile with /win32icon if you want the release icon.
-echo.
+
+if defined CI exit /b 0
 pause
