@@ -11,13 +11,13 @@ using System.Runtime.InteropServices;
 using System.Windows.Forms;
 using Microsoft.Win32;
 
-[assembly: AssemblyTitle("Crasher Unlocker V1.2")]
-[assembly: AssemblyDescription("Castle Crashers save editor and character unlocker")]
+[assembly: AssemblyTitle("Crasher Editor V1.3")]
+[assembly: AssemblyDescription("Castle Crashers offline save editor")]
 [assembly: AssemblyCompany("ThIHuTt")]
-[assembly: AssemblyProduct("Crasher Unlocker")]
+[assembly: AssemblyProduct("Crasher Editor")]
 [assembly: AssemblyCopyright("Created by ThIHuTt")]
-[assembly: AssemblyVersion("1.2.0.0")]
-[assembly: AssemblyFileVersion("1.2.0.0")]
+[assembly: AssemblyVersion("1.3.0.0")]
+[assembly: AssemblyFileVersion("1.3.0.0")]
 
 public sealed partial class CCSaveCrypto
 {
