@@ -1,14 +1,7 @@
 using System;
-using System.Collections.Generic;
-using System.Diagnostics;
-using System.Drawing;
 using System.Globalization;
 using System.IO;
-using System.Linq;
-using System.Reflection;
-using System.Runtime.InteropServices;
 using System.Windows.Forms;
-using Microsoft.Win32;
 
 public sealed partial class MainForm : Form
 {
@@ -16,64 +9,102 @@ public sealed partial class MainForm : Form
     {
         byte[] enc=File.ReadAllBytes(path);
         if((enc.Length%8)!=0)throw new InvalidDataException("Encrypted save length is not a Blowfish block multiple.");
+
         ulong steamId64=SteamIdBase+accountId;
         byte[] key=CCSaveCrypto.BuildKey(steamId64.ToString(CultureInfo.InvariantCulture));
         CCSaveCrypto bf=new CCSaveCrypto(key);
         byte[] plain=bf.Decrypt(enc);
-        if(plain.Length<0x40+CharacterRecordCount*0x30+4)throw new InvalidDataException("Save is shorter than the expected Castle Crashers structure.");
+
+        if(plain.Length<0x40+CharacterRecordCount*0x30+4)
+            throw new InvalidDataException("The decrypted file is shorter than the expected Castle Crashers save structure.");
+
         uint stored=CCSaveCrypto.ReadU32LE(plain,plain.Length-4);
         uint calc=CCSaveCrypto.Checksum(plain,plain.Length-4);
-        if(stored!=calc)throw new InvalidDataException("Save checksum is invalid.");
-        if(!CCSaveCrypto.BasicPlausibility(plain))throw new InvalidDataException("Save data failed the plausibility check.");
-        SaveSession ss=new SaveSession();ss.Path=path;ss.AccountId=accountId;ss.SteamId64=steamId64;ss.Plain=plain;ss.Crypto=bf;ss.Modified=File.GetLastWriteTime(path);return ss;
+        if(stored!=calc)
+            throw new InvalidDataException("Checksum validation failed after decryption. The save may belong to a different Steam account, be damaged, or use an unsupported save format.");
+
+        if(!CCSaveCrypto.BasicPlausibility(plain))
+            throw new InvalidDataException("The decrypted save failed the Castle Crashers structure check.");
+
+        SaveSession ss=new SaveSession();
+        ss.Path=path;
+        ss.AccountId=accountId;
+        ss.SteamId64=steamId64;
+        ss.Plain=plain;
+        ss.Crypto=bf;
+        ss.Modified=File.GetLastWriteTime(path);
+        return ss;
     }
 
-    static IEnumerable<string> FindSaveCandidates(){return GetCandidates().Select(delegate(SaveCandidate x){return x.Path;});}
-
-    sealed class SaveCandidate{public string Path;public ulong AccountId;public ulong SteamId64;public DateTime Modified;}
-
-    static List<SaveCandidate> GetCandidates()
+    static SaveSession SelectAndOpenSave()
     {
-        List<SaveCandidate> hits=new List<SaveCandidate>();
-        HashSet<string> roots=new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-        string v;
-        v=ReadRegistryString(Registry.CurrentUser,@"Software\Valve\Steam","SteamPath");if(!String.IsNullOrEmpty(v))roots.Add(v);
-        v=ReadRegistryString(Registry.LocalMachine,@"SOFTWARE\WOW6432Node\Valve\Steam","InstallPath");if(!String.IsNullOrEmpty(v))roots.Add(v);
-        string pf86=Environment.GetFolderPath(Environment.SpecialFolder.ProgramFilesX86),pf=Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles);
-        if(!String.IsNullOrEmpty(pf86))roots.Add(Path.Combine(pf86,"Steam"));
-        if(!String.IsNullOrEmpty(pf))roots.Add(Path.Combine(pf,"Steam"));
-        foreach(string root in roots)
+        using(OpenFileDialog dialog=new OpenFileDialog())
         {
+            dialog.Title="Select Castle Crashers cc_save.dat";
+            dialog.Filter="Castle Crashers save (cc_save.dat)|cc_save.dat|All files (*.*)|*.*";
+            dialog.FileName="cc_save.dat";
+            dialog.CheckFileExists=true;
+            dialog.Multiselect=false;
+
+            if(dialog.ShowDialog()!=DialogResult.OK)return null;
+
+            string path=Path.GetFullPath(dialog.FileName);
+            ulong accountId;
+            string pathProblem;
+            if(!TryGetSteamAccountIdFromPath(path,out accountId,out pathProblem))
+            {
+                Log("Save selection rejected: "+path+" :: "+pathProblem);
+                throw new InvalidOperationException(
+                    pathProblem+
+                    "\n\nSelect the original save at:\nSteam\\userdata\\<account>\\204360\\remote\\cc_save.dat"+
+                    "\n\nCrasher Editor V1.3 no longer scans the registry, Steam accounts, or running processes.");
+            }
+
+            Log("Selected save: "+path);
+            Log("Steam account ID inferred from path: "+accountId.ToString(CultureInfo.InvariantCulture));
+
             try
             {
-                string userdata=Path.Combine(root,"userdata");
-                if(!Directory.Exists(userdata))continue;
-                foreach(string dir in Directory.GetDirectories(userdata))
-                {
-                    string name=Path.GetFileName(dir);ulong account;
-                    if(!UInt64.TryParse(name,NumberStyles.None,CultureInfo.InvariantCulture,out account))continue;
-                    string path=Path.Combine(dir,AppId.ToString(CultureInfo.InvariantCulture),"remote","cc_save.dat");
-                    if(!File.Exists(path))continue;
-                    SaveCandidate c=new SaveCandidate();c.Path=path;c.AccountId=account;c.SteamId64=SteamIdBase+account;c.Modified=File.GetLastWriteTime(path);hits.Add(c);
-                }
+                return OpenSpecificSave(path,accountId);
             }
-            catch{}
+            catch(Exception ex)
+            {
+                Log("Save open failed: "+path+" :: "+ex.ToString());
+                throw new InvalidDataException(
+                    "Crasher Editor could not validate this save.\n\n"+
+                    ex.Message+
+                    "\n\nAccount folder: "+accountId.ToString(CultureInfo.InvariantCulture)+
+                    "\nLog: "+Path.Combine(Path.GetTempPath(),"Crasher_Editor_V1.3.log"),ex);
+            }
         }
-        hits.Sort(delegate(SaveCandidate a,SaveCandidate b){return b.Modified.CompareTo(a.Modified);});
-        return hits;
     }
 
-    static string ReadRegistryString(RegistryKey hive,string subKey,string valueName)
+    static bool TryGetSteamAccountIdFromPath(string path,out ulong accountId,out string problem)
     {
-        try
+        accountId=0;
+        problem=null;
+
+        if(!String.Equals(Path.GetFileName(path),"cc_save.dat",StringComparison.OrdinalIgnoreCase))
         {
-            using(RegistryKey k=hive.OpenSubKey(subKey))
-            {
-                if(k==null)return null;
-                object o=k.GetValue(valueName);
-                return o==null?null:Convert.ToString(o,CultureInfo.InvariantCulture);
-            }
+            problem="The selected file is not named cc_save.dat.";
+            return false;
         }
-        catch{return null;}
+
+        DirectoryInfo remote=Directory.GetParent(path);
+        DirectoryInfo app=remote==null?null:remote.Parent;
+        DirectoryInfo account=app==null?null:app.Parent;
+        DirectoryInfo userdata=account==null?null:account.Parent;
+
+        if(remote==null||!String.Equals(remote.Name,"remote",StringComparison.OrdinalIgnoreCase)||
+           app==null||!String.Equals(app.Name,AppId.ToString(CultureInfo.InvariantCulture),StringComparison.Ordinal)||
+           account==null||!UInt64.TryParse(account.Name,NumberStyles.None,CultureInfo.InvariantCulture,out accountId)||
+           userdata==null||!String.Equals(userdata.Name,"userdata",StringComparison.OrdinalIgnoreCase))
+        {
+            accountId=0;
+            problem="The editor could not infer the Steam account from the selected file path.";
+            return false;
+        }
+
+        return true;
     }
 }
