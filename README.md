@@ -2,19 +2,21 @@
 
 ## Crasher Editor V1.3
 
-Offline Castle Crashers save editor for your own local Steam profile.
+**Crasher Editor V1.3** is a Windows save editor for **Castle Crashers** that lets you modify your own local Steam save while the game is closed.
 
-### Features
+### What it can edit
 
 - Character unlocks
-- Level, XP, Gold, and supported stats
+- Level, XP, Gold, and combat stats
+- Potions, Bombs, and Sandwiches
 - Weapons and Animal Orbs
-- Consumables and equipment
-- Story/progression editing
-- Profile unlocks
-- Character balancing and MAX options
+- Normal and Insane Mode progression
+- Profile unlocks and key items
+- Character balance and MAX options
 - Automatic backups and restore
 - Light and Dark themes
+
+The editor only changes the save file you select. It does not inject into Castle Crashers, modify other players, or require the game to be running.
 
 ### How to use
 
@@ -23,15 +25,23 @@ Offline Castle Crashers save editor for your own local Steam profile.
 3. Select your original `cc_save.dat` from:
    `Steam\userdata\<account>\204360\remote\cc_save.dat`
 4. Make your changes.
-5. Press **Apply Changes**. A backup is created before the save is written.
+5. Press **Apply Changes** when finished.
+6. A backup is automatically created before the save is written.
 
-Supported limits are Level 1–99 and combat stats 1–25.
+### Supported limits
 
-### V1.3 trust / compatibility cleanup
+- Level: 1–99
+- Strength: 1–25
+- Defense: 1–25
+- Magic: 1–25
+- Agility: 1–25
 
-V1.3 uses a user-selected save instead of scanning Steam accounts. It does not scan the Windows registry, enumerate running processes, launch Explorer, inject into Castle Crashers, modify process memory, or use native Windows theme APIs. The editor only reads/writes the save file the user selects and creates local backups beside it.
+### V1.3
 
-If a save fails validation, check:
+V1.3 improves save loading, error messages, compatibility, and keeps the editor focused on the selected local save file.
+
+If a save fails to load, check:
+
 `%TEMP%\Crasher_Editor_V1.3.log`
 
 ### Build from source
@@ -42,4 +52,4 @@ Output:
 
 `Crasher Editor V1.3.exe`
 
-GitHub Actions also builds the same public source and uploads the EXE as a workflow artifact. Tagged builds can publish the EXE to GitHub Releases automatically.
+GitHub Actions builds the public source and publishes the release EXE together with a SHA-256 checksum.
