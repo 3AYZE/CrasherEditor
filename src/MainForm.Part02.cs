@@ -30,25 +30,61 @@ public sealed partial class MainForm : Form
 
     Control BuildCharacterPanel()
     {
-        Panel side=NewCard(0,0,340,500); side.MinimumSize=new Size(320,420);
-        TableLayoutPanel layout=new TableLayoutPanel(); layout.Dock=DockStyle.Fill; layout.Margin=Padding.Empty; layout.Padding=new Padding(14,12,14,12); layout.ColumnCount=1; layout.RowCount=9; layout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent,100f));
-        layout.RowStyles.Add(new RowStyle(SizeType.Absolute,32f)); layout.RowStyles.Add(new RowStyle(SizeType.Absolute,22f)); layout.RowStyles.Add(new RowStyle(SizeType.Absolute,34f)); layout.RowStyles.Add(new RowStyle(SizeType.Absolute,12f)); layout.RowStyles.Add(new RowStyle(SizeType.Percent,100f)); layout.RowStyles.Add(new RowStyle(SizeType.Absolute,34f)); layout.RowStyles.Add(new RowStyle(SizeType.Absolute,30f)); layout.RowStyles.Add(new RowStyle(SizeType.Absolute,42f)); layout.RowStyles.Add(new RowStyle(SizeType.Absolute,42f)); side.Controls.Add(layout);
-        Label title=NewSectionTitle("Characters",0,0); title.Dock=DockStyle.Fill; title.TextAlign=ContentAlignment.MiddleLeft; layout.Controls.Add(title,0,0);
-        Label searchLabel=NewMutedLabel("Search characters",0,0); searchLabel.Dock=DockStyle.Fill; searchLabel.TextAlign=ContentAlignment.BottomLeft; layout.Controls.Add(searchLabel,0,1);
-        searchBox.Dock=DockStyle.Fill; searchBox.Margin=new Padding(0,2,0,3); searchBox.TextChanged+=delegate{int caret=searchBox.SelectionStart;PopulateList();searchBox.Focus();searchBox.SelectionStart=Math.Min(caret,searchBox.TextLength);searchBox.SelectionLength=0;}; layout.Controls.Add(searchBox,0,2);
-        characterList.Dock=DockStyle.Fill; characterList.Margin=new Padding(0,0,0,10); characterList.View=View.Details; characterList.FullRowSelect=true; characterList.GridLines=false; characterList.HideSelection=false; characterList.MultiSelect=false; characterList.SmallImageList=listRowSpacer; characterList.Font=new Font("Segoe UI",9.0f); characterList.Columns.Add("Slot",42); characterList.Columns.Add("Name",168); characterList.Columns.Add("Status",94); characterList.SelectedIndexChanged+=delegate{UpdateDetails();}; characterList.Resize+=delegate{UpdateCharacterListColumns();}; layout.Controls.Add(characterList,0,4); UpdateCharacterListColumns();
-        ConfigureButton(workshopNameButton,"Name Custom Slot...",0,0,150,30);
-        StyleButton(workshopNameButton,Accent);workshopNameButton.Dock=DockStyle.Fill;
-        workshopNameButton.Enabled=false;
-        workshopNameButton.Click+=delegate{TryUiAction(EditWorkshopSlotName);};
-        layout.Controls.Add(workshopNameButton,0,5);
-        characterBulkStatus.Text="Load a save to view character status"; characterBulkStatus.ForeColor=Muted; characterBulkStatus.Tag="MutedText"; characterBulkStatus.AutoSize=false; characterBulkStatus.AutoEllipsis=true; characterBulkStatus.Dock=DockStyle.Fill; characterBulkStatus.TextAlign=ContentAlignment.MiddleLeft; characterBulkStatus.Margin=new Padding(0,2,0,4); layout.Controls.Add(characterBulkStatus,0,6);
-        ConfigureButton(characterBulkButton,"Unlock All Characters",0,0,100,36); StyleButton(characterBulkButton,Accent); characterBulkButton.Dock=DockStyle.Fill; characterBulkButton.Margin=new Padding(0,3,0,3); characterBulkButton.Enabled=false; characterBulkButton.Click+=delegate{TryUiAction(ToggleAllCharactersSmart);}; layout.Controls.Add(characterBulkButton,0,7);
-        ConfigureButton(maxAllCharactersButton,"MAX All Characters",0,0,100,36); StyleButton(maxAllCharactersButton,Good); maxAllCharactersButton.Dock=DockStyle.Fill; maxAllCharactersButton.Margin=new Padding(0,3,0,0); maxAllCharactersButton.Enabled=false; maxAllCharactersButton.Click+=delegate{TryUiAction(StageMaxAllCharacters);}; layout.Controls.Add(maxAllCharactersButton,0,8);
+        Panel side=new Panel();side.Tag="Sidebar";side.MinimumSize=new Size(260,400);
+        TableLayoutPanel layout=new TableLayoutPanel();
+        layout.Dock=DockStyle.Fill;layout.Margin=Padding.Empty;layout.Padding=new Padding(14,15,14,10);
+        layout.ColumnCount=1;layout.RowCount=6;
+        layout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent,100f));
+        layout.RowStyles.Add(new RowStyle(SizeType.Absolute,38f));
+        layout.RowStyles.Add(new RowStyle(SizeType.Absolute,24f));
+        layout.RowStyles.Add(new RowStyle(SizeType.Absolute,44f));
+        layout.RowStyles.Add(new RowStyle(SizeType.Absolute,43f));
+        layout.RowStyles.Add(new RowStyle(SizeType.Percent,100f));
+        layout.RowStyles.Add(new RowStyle(SizeType.Absolute,30f));side.Controls.Add(layout);
+        Label title=NewSectionTitle("Characters",0,0);
+        title.Font=new Font("Segoe UI Semibold",14f);title.Dock=DockStyle.Fill;title.TextAlign=ContentAlignment.MiddleLeft;
+        layout.Controls.Add(title,0,0);
+        characterCountLabel.Text="32 official  •  10 custom";
+        characterCountLabel.Tag="MutedText";characterCountLabel.Dock=DockStyle.Fill;
+        characterCountLabel.TextAlign=ContentAlignment.MiddleLeft;layout.Controls.Add(characterCountLabel,0,1);
+        searchBox.Dock=DockStyle.Fill;searchBox.Margin=new Padding(0,6,0,7);
+        searchBox.TextChanged+=delegate{PopulateList();};layout.Controls.Add(searchBox,0,2);
+        characterFilter.Items.AddRange(new object[]{"All","Official","Custom"});
+        characterFilter.SelectedIndex=0;
+        characterFilter.SelectedIndexChanged+=delegate{PopulateList();UpdateFilterAppearance();};
+        TableLayoutPanel filters=new TableLayoutPanel();
+        filters.Dock=DockStyle.Fill;filters.Padding=new Padding(0,3,0,3);filters.ColumnCount=3;
+        for(int i=0;i<3;i++)
+        {
+            int index=i;filters.ColumnStyles.Add(new ColumnStyle(SizeType.Percent,100f/3f));
+            Button b=filterButtons[i];b.Text=new string[]{"All","Official","Custom"}[i];b.Dock=DockStyle.Fill;
+            b.Cursor=Cursors.Hand;b.Tag="Filter";b.Margin=new Padding(i==0?0:3,0,i==2?0:3,0);
+            b.FlatStyle=FlatStyle.Flat;b.FlatAppearance.BorderSize=0;
+            b.Click+=delegate{characterFilter.SelectedIndex=index;};
+            filters.Controls.Add(b,i,0);
+        }
+        layout.Controls.Add(filters,0,3);
+        characterList.Dock=DockStyle.Fill;characterList.Margin=new Padding(0,5,0,0);
+        characterList.SelectionChanged+=delegate{UpdateDetails();};
+        layout.Controls.Add(characterList,0,4);
+        Label foot=NewMutedLabel("Select a character to edit its save",0,0);
+        foot.AutoSize=false;foot.Dock=DockStyle.Fill;foot.TextAlign=ContentAlignment.MiddleLeft;
+        layout.Controls.Add(foot,0,5);
         return side;
     }
 
-    void UpdateCharacterListColumns(){if(characterList.Columns.Count<3)return;int slotWidth=40,statusWidth=82,available=characterList.ClientSize.Width-SystemInformation.VerticalScrollBarWidth-20;if(available<=0)return;int nameWidth=Math.Max(110,available-slotWidth-statusWidth);characterList.Columns[0].Width=slotWidth;characterList.Columns[1].Width=nameWidth;characterList.Columns[2].Width=statusWidth;}
+    void UpdateFilterAppearance()
+    {
+        for(int i=0;i<3;i++)
+        {
+            bool on=i==characterFilter.SelectedIndex;
+            filterButtons[i].BackColor=on?SurfaceRaised:Surface;
+            filterButtons[i].ForeColor=on?AccentTextColor:Muted;
+            filterButtons[i].UseVisualStyleBackColor=false;
+            filterButtons[i].FlatStyle=FlatStyle.Flat;
+            filterButtons[i].FlatAppearance.BorderSize=0;
+        }
+    }
 
     Control BuildTabs(){tabs.Dock=DockStyle.Fill;tabs.Font=new Font("Segoe UI Semibold",9.5f);tabs.Padding=new Point(16,6);tabs.Appearance=TabAppearance.FlatButtons;tabs.SizeMode=TabSizeMode.Fixed;tabs.ItemSize=new Size(124,34);tabs.BackColor=Canvas;tabs.Tag="Canvas";BuildOverviewTab();BuildStatsTab();BuildEquipmentTab();BuildProgressTab();BuildUnlockTab();BuildBackupsTab();return tabs;}
     TabPage CreateTab(string text){TabPage page=new TabPage(text);page.BackColor=Canvas;page.ForeColor=TextPrimary;page.Tag="Canvas";page.Padding=Padding.Empty;page.AutoScroll=true;page.AutoScrollMinSize=new Size(850,0);tabs.TabPages.Add(page);return page;}
