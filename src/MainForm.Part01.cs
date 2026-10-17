@@ -62,7 +62,10 @@ public sealed partial class MainForm : Form
 
     SaveSession session;
 
-    readonly ListView characterList = new ListView();
+    readonly ModernCharacterList characterList = new ModernCharacterList();
+    readonly ComboBox characterFilter = new ComboBox();
+    readonly Button[] filterButtons = new Button[]{new Button(),new Button(),new Button()};
+    readonly Label characterCountLabel = new Label();
     readonly Button workshopNameButton = new Button();
     readonly TextBox searchBox = new TextBox();
     readonly Label savePathLabel = new Label();
@@ -169,16 +172,16 @@ public sealed partial class MainForm : Form
         root.ColumnCount = 1;
         root.RowCount = 3;
         root.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100f));
-        root.RowStyles.Add(new RowStyle(SizeType.Absolute, 96f));
+        root.RowStyles.Add(new RowStyle(SizeType.Absolute, 88f));
         root.RowStyles.Add(new RowStyle(SizeType.Percent, 100f));
         root.RowStyles.Add(new RowStyle(SizeType.Absolute, 64f));
         Controls.Add(root);
         Control header = BuildHeader(); header.Dock = DockStyle.Fill; header.Margin = Padding.Empty; root.Controls.Add(header, 0, 0);
         TableLayoutPanel workspace = new TableLayoutPanel();
         workspace.Dock = DockStyle.Fill; workspace.Margin = Padding.Empty; workspace.Padding = new Padding(16,16,16,8); workspace.BackColor = Canvas; workspace.Tag = "Canvas";
-        workspace.ColumnCount = 2; workspace.RowCount = 1; workspace.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 360f)); workspace.ColumnStyles.Add(new ColumnStyle(SizeType.Percent,100f)); workspace.RowStyles.Add(new RowStyle(SizeType.Percent,100f));
+        workspace.ColumnCount = 2; workspace.RowCount = 1; workspace.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 316f)); workspace.ColumnStyles.Add(new ColumnStyle(SizeType.Percent,100f)); workspace.RowStyles.Add(new RowStyle(SizeType.Percent,100f));
         root.Controls.Add(workspace,0,1);
-        Control side = BuildCharacterPanel(); side.Dock = DockStyle.Fill; side.Margin = new Padding(0,0,14,0); workspace.Controls.Add(side,0,0);
+        Control side = BuildCharacterPanel(); side.Dock = DockStyle.Fill; side.Margin = new Padding(0,0,16,0); workspace.Controls.Add(side,0,0);
         Control tabHost = BuildTabs(); tabHost.Dock = DockStyle.Fill; tabHost.Margin = Padding.Empty; workspace.Controls.Add(tabHost,1,0);
         Control status = BuildStatusBar(); status.Dock = DockStyle.Fill; status.Margin = Padding.Empty; root.Controls.Add(status,0,2);
         ResumeLayout(true);
