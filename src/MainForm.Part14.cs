@@ -31,6 +31,30 @@ public sealed partial class MainForm : Form
     static string FormatBytes(long n){if(n>=1024*1024)return(n/(1024.0*1024.0)).ToString("0.0",CultureInfo.InvariantCulture)+" MB";if(n>=1024)return(n/1024.0).ToString("0.0",CultureInfo.InvariantCulture)+" KB";return n.ToString(CultureInfo.InvariantCulture)+" B";}
     string SelectedBackupPath(){if(backupList.SelectedItems.Count==0)throw new InvalidOperationException("Select a backup first.");return Convert.ToString(backupList.SelectedItems[0].Tag,CultureInfo.InvariantCulture);}
 
+    string SafelyRestoreValidatedBackup(string sourceBackup)
+    {
+        byte[] previous=File.ReadAllBytes(session.Path);
+        if(session.OriginalEncrypted==null || !previous.SequenceEqual(session.OriginalEncrypted))
+            throw new IOException("Save changed on disk; refresh before restoring a backup.");
+        byte[] candidate=File.ReadAllBytes(sourceBackup);
+        string safety=session.Path+".crasher_backup_before_restore_"+DateTime.Now.ToString("yyyyMMdd_HHmmss_fff",CultureInfo.InvariantCulture);
+        string temporary=session.Path+".crasher_restore_"+Guid.NewGuid().ToString("N")+".tmp";
+        File.Copy(session.Path,safety,false);
+        try
+        {
+            File.WriteAllBytes(temporary,candidate);
+            if(!File.ReadAllBytes(temporary).SequenceEqual(candidate))
+                throw new IOException("Backup staging failed; the original save is unchanged.");
+            if(!File.ReadAllBytes(session.Path).SequenceEqual(previous))
+                throw new IOException("Save changed during restore; replacement cancelled.");
+            File.Replace(temporary,session.Path,null);
+        }
+        finally { if(File.Exists(temporary))File.Delete(temporary); }
+        if(!File.ReadAllBytes(session.Path).SequenceEqual(candidate))
+            throw new IOException("Restored file could not be verified. Your safety backup remains available.");
+        return safety;
+    }
+
     void RestoreLatestBackup()
     {
         if(HasPendingChanges())
@@ -46,8 +70,7 @@ public sealed partial class MainForm : Form
         string backup=files[0].FullName;
         SaveSession validated=OpenSpecificSave(backup,session.AccountId);
         if(!Confirm("Restore the newest automatic backup?\n\n"+Path.GetFileName(backup)+"\n\nThe current save will be backed up again before restore.\n\nMake sure Castle Crashers is completely closed before continuing."))return;
-        string safety=session.Path+".crasher_backup_before_restore_"+DateTime.Now.ToString("yyyyMMdd_HHmmss_fff",CultureInfo.InvariantCulture);
-        File.Copy(session.Path,safety,true);File.Copy(backup,session.Path,true);
+        string safety=SafelyRestoreValidatedBackup(backup);
         validated.Path=session.Path;validated.Modified=File.GetLastWriteTime(session.Path);session=validated;committedPlain=(byte[])session.Plain.Clone();pendingDangerous=false;ClearMaxAllCharacterSnapshot();
         int idx=SelectedIndex;savePathLabel.Text=session.Path;PopulateList();SelectCharacter(idx);UpdateDetails();RefreshBackups();saveStateLabel.Text="Restored";saveStateLabel.ForeColor=HeaderGood;SetStatus("Newest backup restored. Safety backup: "+Path.GetFileName(safety));
     }
@@ -64,8 +87,7 @@ public sealed partial class MainForm : Form
         if(!File.Exists(backup))throw new FileNotFoundException("The selected backup no longer exists.",backup);
         SaveSession validated=OpenSpecificSave(backup,session.AccountId);
         if(!Confirm("Restore this backup?\n\n"+Path.GetFileName(backup)+"\n\nThe current save will be backed up again before restore.\n\nMake sure Castle Crashers is completely closed before continuing."))return;
-        string safety=session.Path+".crasher_backup_before_restore_"+DateTime.Now.ToString("yyyyMMdd_HHmmss",CultureInfo.InvariantCulture);
-        File.Copy(session.Path,safety,true);File.Copy(backup,session.Path,true);
+        string safety=SafelyRestoreValidatedBackup(backup);
         validated.Path=session.Path;validated.Modified=File.GetLastWriteTime(session.Path);session=validated;committedPlain=(byte[])session.Plain.Clone();pendingDangerous=false;ClearMaxAllCharacterSnapshot();
         int idx=SelectedIndex;savePathLabel.Text=session.Path;PopulateList();SelectCharacter(idx);UpdateDetails();RefreshBackups();saveStateLabel.Text="Restored";saveStateLabel.ForeColor=HeaderGood;SetStatus("Backup restored. Safety backup: "+Path.GetFileName(safety));
     }
@@ -76,13 +98,32 @@ public sealed partial class MainForm : Form
 
     string SaveEncrypted()
     {
-        uint sum=CCSaveCrypto.Checksum(session.Plain,session.Plain.Length-4);
-        CCSaveCrypto.WriteU32LE(session.Plain,session.Plain.Length-4,sum);
-        byte[] enc=session.Crypto.Encrypt(session.Plain);
+        byte[] previous=File.ReadAllBytes(session.Path);
+        if(session.OriginalEncrypted==null || !previous.SequenceEqual(session.OriginalEncrypted))
+            throw new IOException("The save changed on disk after it was loaded. Click Refresh before applying edits.");
+        uint checksum=CCSaveCrypto.Checksum(session.Plain,session.Plain.Length-4);
+        CCSaveCrypto.WriteU32LE(session.Plain,session.Plain.Length-4,checksum);
+        byte[] encrypted=session.Crypto.Encrypt(session.Plain);
+        byte[] check=session.Crypto.Decrypt(encrypted);
+        if(!check.SequenceEqual(session.Plain) || CCSaveCrypto.ReadU32LE(check,check.Length-4)!=CCSaveCrypto.Checksum(check,check.Length-4))
+            throw new InvalidDataException("Encrypted save verification failed. Original file was not modified.");
         string stamp=DateTime.Now.ToString("yyyyMMdd_HHmmss_fff",CultureInfo.InvariantCulture);
         string backup=session.Path+".crasher_backup_"+stamp;
-        File.Copy(session.Path,backup,true);
-        File.WriteAllBytes(session.Path,enc);
+        string temporary=session.Path+".crasher_write_"+Guid.NewGuid().ToString("N")+".tmp";
+        File.Copy(session.Path,backup,false);
+        try
+        {
+            File.WriteAllBytes(temporary,encrypted);
+            if(!File.ReadAllBytes(temporary).SequenceEqual(encrypted))
+                throw new IOException("Temporary save verification failed.");
+            if(!File.ReadAllBytes(session.Path).SequenceEqual(previous))
+                throw new IOException("Save changed during the write; original was preserved.");
+            File.Replace(temporary,session.Path,null);
+        }
+        finally { if(File.Exists(temporary))File.Delete(temporary); }
+        if(!File.ReadAllBytes(session.Path).SequenceEqual(encrypted))
+            throw new IOException("Post-write verification failed. Restore the automatic backup.");
+        session.OriginalEncrypted=(byte[])encrypted.Clone();
         session.Modified=File.GetLastWriteTime(session.Path);
         return backup;
     }
@@ -95,5 +136,5 @@ public sealed partial class MainForm : Form
         int o=CharacterOffset(i);CharacterData c=new CharacterData();c.Index=i;c.Name=CharacterNames[i];c.Unlocked=plain[o]==0x80;c.Level=Math.Min(99,plain[o+0x01]+1);c.XP=CCSaveCrypto.ReadI32BE(plain,o+0x02);c.Gold=CCSaveCrypto.ReadI32BE(plain,o+0x13);c.Strength=Math.Min(25,(int)plain[o+0x08]);c.Defense=Math.Min(25,(int)plain[o+0x09]);c.Magic=Math.Min(25,(int)plain[o+0x0A]);c.Agility=Math.Min(25,(int)plain[o+0x0B]);c.Potions=plain[o+0x0F];c.Bombs=plain[o+0x10];c.Sandwiches=plain[o+0x11];return c;
     }
     static int CharacterOffset(int i){return 0x40+i*0x30;}
-    void SelectCharacter(int idx){foreach(ListViewItem item in characterList.Items){if((int)item.Tag==idx){item.Selected=true;characterList.Select();break;}}}
+    void SelectCharacter(int idx){characterList.SelectSlot(idx);}
 }

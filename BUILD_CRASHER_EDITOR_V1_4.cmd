@@ -2,7 +2,7 @@
 setlocal
 cd /d "%~dp0"
 
-title Crasher Editor V1.3 - Build
+title Crasher Editor V1.4 - Build
 
 set "CSC=%WINDIR%\Microsoft.NET\Framework64\v4.0.30319\csc.exe"
 if not exist "%CSC%" set "CSC=%WINDIR%\Microsoft.NET\Framework\v4.0.30319\csc.exe"
@@ -18,11 +18,18 @@ if not exist "%CSC%" (
 )
 
 echo.
-echo Building Crasher Editor V1.3...
+echo Building Crasher Editor V1.4...
+if not exist "%~dp0assets\CrasherEditor.ico" (
+  echo Generating icon resource...
+  py -3 "%~dp0tools\build_icon.py"
+  if errorlevel 1 python "%~dp0tools\build_icon.py"
+)
+if not exist "%~dp0assets\CrasherEditor.ico" exit /b 1
 echo.
 
 "%CSC%" /nologo /target:winexe /platform:anycpu /optimize+ /debug- ^
-  /out:"%~dp0Crasher Editor V1.3.exe" ^
+  /win32icon:"%~dp0assets\CrasherEditor.ico" ^
+  /out:"%~dp0Crasher Editor V1.4.exe" ^
   /reference:System.dll ^
   /reference:System.Core.dll ^
   /reference:System.Drawing.dll ^
@@ -45,6 +52,9 @@ echo.
   "%~dp0src\MainForm.Part13.cs" ^
   "%~dp0src\MainForm.Part14.cs" ^
   "%~dp0src\MainForm.Part15.cs" ^
+  "%~dp0src\WorkshopSlotLabels.cs" ^
+  "%~dp0src\AppTrayIcon.cs" ^
+  "%~dp0src\ModernCharacterList.cs" ^
   "%~dp0src\Program.cs"
 
 if errorlevel 1 (
@@ -57,11 +67,11 @@ if errorlevel 1 (
 
 echo.
 echo ==========================================
-echo  Crasher Editor V1.3 build complete
+echo  Crasher Editor V1.4 build complete
 echo ==========================================
 echo.
 echo Output:
-echo "%~dp0Crasher Editor V1.3.exe"
+echo "%~dp0Crasher Editor V1.4.exe"
 echo.
 
 if defined CI exit /b 0

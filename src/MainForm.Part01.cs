@@ -12,6 +12,7 @@ public sealed partial class MainForm : Form
     const ulong SteamIdBase = 76561197960265728UL;
     const int AppId = 204360;
     const int CharacterRecordCount = 42;
+    const int OfficialCharacterCount = 32;
 
     static readonly string[] CharacterNames = new string[] {
         "Green Knight","Red Knight","Blue Knight","Orange Knight","Gray Knight",
@@ -19,7 +20,9 @@ public sealed partial class MainForm : Form
         "The King","The Brute","Snakey","Saracen","Royal Guard","Stove Face",
         "Peasant","Bear","Necromancer","Conehead","Civilian","Open-Faced Gray Knight",
         "Fire Demon","Skeleton","Iceskimo","Ninja","Cult Minion","Pink Knight",
-        "Blacksmith","Hatty Hattington","Paint Junior"
+        "Blacksmith","Hatty Hattington","Paint Junior",
+        "Custom Slot 01","Custom Slot 02","Custom Slot 03","Custom Slot 04","Custom Slot 05",
+        "Custom Slot 06","Custom Slot 07","Custom Slot 08","Custom Slot 09","Custom Slot 10"
     };
 
     static readonly string[] WeaponNames = new string[] {
@@ -59,7 +62,11 @@ public sealed partial class MainForm : Form
 
     SaveSession session;
 
-    readonly ListView characterList = new ListView();
+    readonly ModernCharacterList characterList = new ModernCharacterList();
+    readonly ComboBox characterFilter = new ComboBox();
+    readonly Button[] filterButtons = new Button[]{new Button(),new Button(),new Button()};
+    readonly Label characterCountLabel = new Label();
+    readonly Button workshopNameButton = new Button();
     readonly TextBox searchBox = new TextBox();
     readonly Label savePathLabel = new Label();
     readonly Label saveStateLabel = new Label();
@@ -127,8 +134,8 @@ public sealed partial class MainForm : Form
 
     public MainForm()
     {
-        Text = "Crasher Editor V1.3";
-        try { Icon exeIcon = Icon.ExtractAssociatedIcon(Application.ExecutablePath); if (exeIcon != null) this.Icon = exeIcon; } catch { }
+        Text = "Crasher Editor V1.4";
+        InitializeApplicationIcon();
         LoadThemePreference();
         SetThemeColors();
         StartPosition = FormStartPosition.CenterScreen;
@@ -165,16 +172,16 @@ public sealed partial class MainForm : Form
         root.ColumnCount = 1;
         root.RowCount = 3;
         root.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100f));
-        root.RowStyles.Add(new RowStyle(SizeType.Absolute, 96f));
+        root.RowStyles.Add(new RowStyle(SizeType.Absolute, 88f));
         root.RowStyles.Add(new RowStyle(SizeType.Percent, 100f));
         root.RowStyles.Add(new RowStyle(SizeType.Absolute, 64f));
         Controls.Add(root);
         Control header = BuildHeader(); header.Dock = DockStyle.Fill; header.Margin = Padding.Empty; root.Controls.Add(header, 0, 0);
         TableLayoutPanel workspace = new TableLayoutPanel();
         workspace.Dock = DockStyle.Fill; workspace.Margin = Padding.Empty; workspace.Padding = new Padding(16,16,16,8); workspace.BackColor = Canvas; workspace.Tag = "Canvas";
-        workspace.ColumnCount = 2; workspace.RowCount = 1; workspace.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 360f)); workspace.ColumnStyles.Add(new ColumnStyle(SizeType.Percent,100f)); workspace.RowStyles.Add(new RowStyle(SizeType.Percent,100f));
+        workspace.ColumnCount = 2; workspace.RowCount = 1; workspace.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 316f)); workspace.ColumnStyles.Add(new ColumnStyle(SizeType.Percent,100f)); workspace.RowStyles.Add(new RowStyle(SizeType.Percent,100f));
         root.Controls.Add(workspace,0,1);
-        Control side = BuildCharacterPanel(); side.Dock = DockStyle.Fill; side.Margin = new Padding(0,0,14,0); workspace.Controls.Add(side,0,0);
+        Control side = BuildCharacterPanel(); side.Dock = DockStyle.Fill; side.Margin = new Padding(0,0,16,0); workspace.Controls.Add(side,0,0);
         Control tabHost = BuildTabs(); tabHost.Dock = DockStyle.Fill; tabHost.Margin = Padding.Empty; workspace.Controls.Add(tabHost,1,0);
         Control status = BuildStatusBar(); status.Dock = DockStyle.Fill; status.Margin = Padding.Empty; root.Controls.Add(status,0,2);
         ResumeLayout(true);

@@ -13,6 +13,7 @@ public sealed class SaveSession
     public ulong AccountId;
     public ulong SteamId64;
     public byte[] Plain;
+    public byte[] OriginalEncrypted;
     public CCSaveCrypto Crypto;
     public DateTime Modified;
 }
@@ -82,39 +83,24 @@ public sealed class ThemedTabControl : TabControl
     protected override void OnPaint(PaintEventArgs e)
     {
         e.Graphics.Clear(ThemeCanvas);
-
-        Rectangle pageRect = DisplayRectangle;
-        if (pageRect.Width > 0 && pageRect.Height > 0)
+        Rectangle page=DisplayRectangle;
+        if(page.Width>0 && page.Height>0)
         {
-            using (SolidBrush pageBrush = new SolidBrush(ThemeCanvas))
-                e.Graphics.FillRectangle(pageBrush, pageRect);
+            using(SolidBrush surface=new SolidBrush(ThemeCanvas))e.Graphics.FillRectangle(surface,page);
         }
-
-        for (int i = 0; i < TabCount; i++)
+        e.Graphics.SmoothingMode=System.Drawing.Drawing2D.SmoothingMode.AntiAlias;
+        for(int i=0;i<TabCount;i++)
         {
-            Rectangle r = GetTabRect(i);
-            bool selected = i == SelectedIndex;
-            Color fill = selected ? ThemeSelected : ThemeInactive;
-
-            using (SolidBrush brush = new SolidBrush(fill))
-                e.Graphics.FillRectangle(brush, r);
-            using (Pen pen = new Pen(ThemeBorder))
-                e.Graphics.DrawRectangle(pen, r.X, r.Y, Math.Max(0, r.Width - 1), Math.Max(0, r.Height - 1));
-
-            if (selected)
+            Rectangle tab=GetTabRect(i);
+            Rectangle rect=new Rectangle(tab.X+4,tab.Y+3,Math.Max(1,tab.Width-8),Math.Max(1,tab.Height-6));
+            bool selected=i==SelectedIndex;
+            if(selected)
             {
-                using (SolidBrush accent = new SolidBrush(ThemeAccent))
-                    e.Graphics.FillRectangle(accent, r.X + 1, r.Bottom - 3, Math.Max(0, r.Width - 2), 3);
+                using(SolidBrush fill=new SolidBrush(ThemeSelected))e.Graphics.FillRectangle(fill,rect);
+                using(SolidBrush mark=new SolidBrush(ThemeAccent))e.Graphics.FillRectangle(mark,rect.X+12,rect.Bottom-3,Math.Max(1,rect.Width-24),2);
             }
-
-            Rectangle textRect = new Rectangle(r.X + 8, r.Y + 1, Math.Max(1, r.Width - 16), Math.Max(1, r.Height - 3));
-            TextRenderer.DrawText(
-                e.Graphics,
-                TabPages[i].Text.Replace("&&", "&"),
-                Font,
-                textRect,
-                selected ? ThemePrimary : ThemeMuted,
-                TextFormatFlags.HorizontalCenter | TextFormatFlags.VerticalCenter | TextFormatFlags.EndEllipsis | TextFormatFlags.NoPrefix);
+            TextRenderer.DrawText(e.Graphics,TabPages[i].Text.Replace("&&","&"),Font,rect,selected?ThemePrimary:ThemeMuted,
+                TextFormatFlags.HorizontalCenter|TextFormatFlags.VerticalCenter|TextFormatFlags.EndEllipsis|TextFormatFlags.NoPrefix);
         }
     }
 

@@ -2,8 +2,7 @@ name: Build Crasher Editor
 
 on:
   push:
-    branches:
-      - main
+    branches: [main]
   pull_request:
   workflow_dispatch:
 
@@ -14,39 +13,63 @@ jobs:
   build:
     runs-on: windows-latest
     steps:
-      - name: Checkout source
+      - name: Checkout public source
         uses: actions/checkout@v4
 
-      - name: Build Crasher Editor V1.3
-        shell: cmd
-        run: call BUILD_CRASHER_EDITOR_V1_3.cmd
+      - name: Set up Python for the artwork icon resource
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
 
-      - name: Create SHA-256 file
+      - name: Generate multi-size Windows icon
+        run: python tools/build_icon.py
+
+      - name: Compile V1.4 Windows EXE
+        shell: cmd
+        run: call BUILD_CRASHER_EDITOR_V1_4.cmd
+
+      - name: Validate executable metadata and icon
         shell: pwsh
         run: |
-          $hash = (Get-FileHash "Crasher Editor V1.3.exe" -Algorithm SHA256).Hash.ToLowerInvariant()
-          "$hash  Crasher Editor V1.3.exe" | Set-Content -Encoding ascii SHA256SUMS.txt
+          $exe = (Resolve-Path 'Crasher Editor V1.4.exe').Path
+          $meta = [System.Diagnostics.FileVersionInfo]::GetVersionInfo($exe)
+          if ($meta.FileVersion -ne '1.4.0.0') { throw "Unexpected file version: $($meta.FileVersion)" }
+          if ($meta.CompanyName -ne '3AZYE') { throw "Unexpected creator: $($meta.CompanyName)" }
+          Add-Type -AssemblyName System.Drawing
+          $icon = [System.Drawing.Icon]::ExtractAssociatedIcon($exe)
+          if ($null -eq $icon) { throw "Embedded Windows executable icon is missing." }
+          $icon.Dispose()
+          $bytes = [IO.File]::ReadAllBytes('assets/CrasherEditor.ico')
+          if ([BitConverter]::ToUInt16($bytes, 4) -lt 6) { throw 'Multi-frame icon missing.' }
+          Write-Host 'EXE version, 3AZYE credit and embedded icon verified.'
 
-      - name: Upload build artifact
+      - name: Create SHA-256 checksum
+        shell: pwsh
+        run: |
+          $hash = (Get-FileHash 'Crasher Editor V1.4.exe' -Algorithm SHA256).Hash.ToLowerInvariant()
+          "$hash  Crasher Editor V1.4.exe" | Set-Content -Encoding ascii SHA256SUMS.txt
+
+      - name: Upload tested artifact
         uses: actions/upload-artifact@v4
         with:
-          name: Crasher-Editor-V1.3
+          name: Crasher-Editor-V1.4
           path: |
-            Crasher Editor V1.3.exe
+            Crasher Editor V1.4.exe
             SHA256SUMS.txt
           if-no-files-found: error
 
-      - name: Publish V1.3 release from CI
+      - name: Publish V1.4 release
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         shell: pwsh
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          $tag = "v1.3"
-          $title = "Crasher Editor V1.3"
+          $tag = 'v1.4'
+          $title = 'Crasher Editor V1.4'
+          $notes = 'Offline Castle Crashers save editor for Windows. Edit levels, stats, gold, items, progress, profile unlocks and 10 Workshop slots. Custom-slot labels stay separate from cc_save.dat. Includes backups, safer save writes, dark UI and a custom application icon. Close Castle Crashers before editing.'
           if (gh release view $tag 2>$null) {
-            gh release edit $tag --title $title --target "${{ github.sha }}"
-            gh release upload $tag "Crasher Editor V1.3.exe" SHA256SUMS.txt --clobber
+            gh release edit $tag --title $title --target "${{ github.sha }}" --notes $notes
+            gh release upload $tag 'Crasher Editor V1.4.exe' SHA256SUMS.txt --clobber
           } else {
-            gh release create $tag "Crasher Editor V1.3.exe" SHA256SUMS.txt --title $title --target "${{ github.sha }}" --notes "Offline Castle Crashers save editor. Built directly from the public source by GitHub Actions."
+            gh release create $tag 'Crasher Editor V1.4.exe' SHA256SUMS.txt --title $title --target "${{ github.sha }}" --notes $notes
           }
