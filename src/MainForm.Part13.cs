@@ -63,9 +63,9 @@ public sealed partial class MainForm : Form
     {
         EnsureLoaded();
         if (maxAllCharacterSnapshotActive){UndoMaxAllCharacters();return;}
-        byte[,] snapshot=new byte[CharacterNames.Length,MaxAllCharacterFieldOffsets.Length];
+        byte[,] snapshot=new byte[OfficialCharacterCount,MaxAllCharacterFieldOffsets.Length];
         bool changed=false;
-        for(int i=0;i<CharacterNames.Length;i++)
+        for(int i=0;i<OfficialCharacterCount;i++)
         {
             int o=CharacterOffset(i);
             for(int f=0;f<MaxAllCharacterFieldOffsets.Length;f++) snapshot[i,f]=session.Plain[o+MaxAllCharacterFieldOffsets[f]];
@@ -73,7 +73,7 @@ public sealed partial class MainForm : Form
         }
         if(!changed){SetStatus("All official characters already have MAX stats/items.");UpdateCharacterBulkControl();return;}
         maxAllCharacterSnapshot=snapshot;maxAllCharacterSnapshotActive=true;
-        for(int i=0;i<CharacterNames.Length;i++)
+        for(int i=0;i<OfficialCharacterCount;i++)
         {
             int o=CharacterOffset(i);
             session.Plain[o+0x08]=25; session.Plain[o+0x09]=25; session.Plain[o+0x0A]=25; session.Plain[o+0x0B]=25;
@@ -81,14 +81,14 @@ public sealed partial class MainForm : Form
         }
         int idx=SelectedIndex;
         PopulateList();SelectCharacter(idx);UpdateDetails();
-        MarkPending("MAX stats/items staged for all "+CharacterNames.Length.ToString(CultureInfo.InvariantCulture)+" official characters; press Undo MAX All before Apply to restore the exact prior values",false);
+        MarkPending("MAX stats/items staged for all "+OfficialCharacterCount.ToString(CultureInfo.InvariantCulture)+" official characters; press Undo MAX All before Apply to restore the exact prior values",false);
     }
 
     void UndoMaxAllCharacters()
     {
         EnsureLoaded();
         if(!maxAllCharacterSnapshotActive||maxAllCharacterSnapshot==null){SetStatus("There is no staged MAX All operation to undo.");UpdateCharacterBulkControl();return;}
-        for(int i=0;i<CharacterNames.Length;i++)
+        for(int i=0;i<OfficialCharacterCount;i++)
         {
             int o=CharacterOffset(i);
             for(int f=0;f<MaxAllCharacterFieldOffsets.Length;f++) session.Plain[o+MaxAllCharacterFieldOffsets[f]]=maxAllCharacterSnapshot[i,f];
