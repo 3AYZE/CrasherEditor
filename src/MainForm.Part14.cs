@@ -76,13 +76,32 @@ public sealed partial class MainForm : Form
 
     string SaveEncrypted()
     {
-        uint sum=CCSaveCrypto.Checksum(session.Plain,session.Plain.Length-4);
-        CCSaveCrypto.WriteU32LE(session.Plain,session.Plain.Length-4,sum);
-        byte[] enc=session.Crypto.Encrypt(session.Plain);
+        byte[] previous=File.ReadAllBytes(session.Path);
+        if(session.OriginalEncrypted==null || !previous.SequenceEqual(session.OriginalEncrypted))
+            throw new IOException("The save changed on disk after it was loaded. Click Refresh before applying edits.");
+        uint checksum=CCSaveCrypto.Checksum(session.Plain,session.Plain.Length-4);
+        CCSaveCrypto.WriteU32LE(session.Plain,session.Plain.Length-4,checksum);
+        byte[] encrypted=session.Crypto.Encrypt(session.Plain);
+        byte[] check=session.Crypto.Decrypt(encrypted);
+        if(!check.SequenceEqual(session.Plain) || CCSaveCrypto.ReadU32LE(check,check.Length-4)!=CCSaveCrypto.Checksum(check,check.Length-4))
+            throw new InvalidDataException("Encrypted save verification failed. Original file was not modified.");
         string stamp=DateTime.Now.ToString("yyyyMMdd_HHmmss_fff",CultureInfo.InvariantCulture);
         string backup=session.Path+".crasher_backup_"+stamp;
-        File.Copy(session.Path,backup,true);
-        File.WriteAllBytes(session.Path,enc);
+        string temporary=session.Path+".crasher_write_"+Guid.NewGuid().ToString("N")+".tmp";
+        File.Copy(session.Path,backup,false);
+        try
+        {
+            File.WriteAllBytes(temporary,encrypted);
+            if(!File.ReadAllBytes(temporary).SequenceEqual(encrypted))
+                throw new IOException("Temporary save verification failed.");
+            if(!File.ReadAllBytes(session.Path).SequenceEqual(previous))
+                throw new IOException("Save changed during the write; original was preserved.");
+            File.Replace(temporary,session.Path,null);
+        }
+        finally { if(File.Exists(temporary))File.Delete(temporary); }
+        if(!File.ReadAllBytes(session.Path).SequenceEqual(encrypted))
+            throw new IOException("Post-write verification failed. Restore the automatic backup.");
+        session.OriginalEncrypted=(byte[])encrypted.Clone();
         session.Modified=File.GetLastWriteTime(session.Path);
         return backup;
     }
