@@ -114,5 +114,5 @@ public sealed partial class MainForm : Form
         int o=CharacterOffset(i);CharacterData c=new CharacterData();c.Index=i;c.Name=CharacterNames[i];c.Unlocked=plain[o]==0x80;c.Level=Math.Min(99,plain[o+0x01]+1);c.XP=CCSaveCrypto.ReadI32BE(plain,o+0x02);c.Gold=CCSaveCrypto.ReadI32BE(plain,o+0x13);c.Strength=Math.Min(25,(int)plain[o+0x08]);c.Defense=Math.Min(25,(int)plain[o+0x09]);c.Magic=Math.Min(25,(int)plain[o+0x0A]);c.Agility=Math.Min(25,(int)plain[o+0x0B]);c.Potions=plain[o+0x0F];c.Bombs=plain[o+0x10];c.Sandwiches=plain[o+0x11];return c;
     }
     static int CharacterOffset(int i){return 0x40+i*0x30;}
-    void SelectCharacter(int idx){foreach(ListViewItem item in characterList.Items){if((int)item.Tag==idx){item.Selected=true;characterList.Select();break;}}}
+    void SelectCharacter(int idx){characterList.SelectSlot(idx);}
 }
