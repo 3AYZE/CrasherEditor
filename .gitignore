@@ -2,7 +2,9 @@
 *.pdb
 *.log
 *.crasher_backup_*
-*.unlocker_tmp
 .vs/
 bin/
 obj/
+assets/CrasherEditor.ico
+*.crasher_write_*.tmp
+*.crasher_restore_*.tmp

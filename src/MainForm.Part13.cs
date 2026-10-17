@@ -116,5 +116,4 @@ public sealed partial class MainForm : Form
     void RunGlobalAction(string confirmText,Action mutation,string success){EnsureLoaded();mutation();pendingDangerous=true;PopulateList();SelectCharacter(SelectedIndex);UpdateDetails();MarkPending(success+" staged",true);}
     bool Confirm(string message){return MessageBox.Show(this,message,"Confirm",MessageBoxButtons.YesNo,MessageBoxIcon.Warning)==DialogResult.Yes;}
     void RefreshUiAfterWrite(int idx){PopulateList();SelectCharacter(idx);UpdateDetails();RefreshBackups();UpdatePendingUi();}
-    void ShowSaved(string action,string backup){SetStatus(action+". Backup: "+Path.GetFileName(backup));}
 }
