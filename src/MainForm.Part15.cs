@@ -31,6 +31,7 @@ public sealed partial class MainForm : Form
         ss.AccountId=accountId;
         ss.SteamId64=steamId64;
         ss.Plain=plain;
+        ss.OriginalEncrypted=enc;
         ss.Crypto=bf;
         ss.Modified=File.GetLastWriteTime(path);
         return ss;
@@ -57,7 +58,7 @@ public sealed partial class MainForm : Form
                 throw new InvalidOperationException(
                     pathProblem+
                     "\n\nSelect the original save at:\nSteam\\userdata\\<account>\\204360\\remote\\cc_save.dat"+
-                    "\n\nCrasher Editor V1.3 no longer scans the registry, Steam accounts, or running processes.");
+                    "\n\nCrasher Editor V1.4 no longer scans the registry, Steam accounts, or running processes.");
             }
 
             Log("Selected save: "+path);
@@ -74,7 +75,7 @@ public sealed partial class MainForm : Form
                     "Crasher Editor could not validate this save.\n\n"+
                     ex.Message+
                     "\n\nAccount folder: "+accountId.ToString(CultureInfo.InvariantCulture)+
-                    "\nLog: "+Path.Combine(Path.GetTempPath(),"Crasher_Editor_V1.3.log"),ex);
+                    "\nLog: "+Path.Combine(Path.GetTempPath(),"Crasher_Editor_V1.4.log"),ex);
             }
         }
     }
