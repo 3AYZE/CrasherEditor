@@ -13,6 +13,7 @@ public sealed class SaveSession
     public ulong AccountId;
     public ulong SteamId64;
     public byte[] Plain;
+    public byte[] OriginalEncrypted;
     public CCSaveCrypto Crypto;
     public DateTime Modified;
 }
