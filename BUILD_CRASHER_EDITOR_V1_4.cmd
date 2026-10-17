@@ -54,6 +54,7 @@ echo.
   "%~dp0src\MainForm.Part15.cs" ^
   "%~dp0src\WorkshopSlotLabels.cs" ^
   "%~dp0src\AppTrayIcon.cs" ^
+  "%~dp0src\ModernCharacterList.cs" ^
   "%~dp0src\Program.cs"
 
 if errorlevel 1 (
