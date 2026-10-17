@@ -8,13 +8,13 @@ using System.Linq;
 using System.Reflection;
 using System.Windows.Forms;
 
-[assembly: AssemblyTitle("Crasher Editor V1.3")]
+[assembly: AssemblyTitle("Crasher Editor V1.4")]
 [assembly: AssemblyDescription("Castle Crashers offline save editor")]
-[assembly: AssemblyCompany("ThIHuTt")]
+[assembly: AssemblyCompany("3AZYE")]
 [assembly: AssemblyProduct("Crasher Editor")]
-[assembly: AssemblyCopyright("Created by ThIHuTt")]
-[assembly: AssemblyVersion("1.3.0.0")]
-[assembly: AssemblyFileVersion("1.3.0.0")]
+[assembly: AssemblyCopyright("Created by 3AZYE")]
+[assembly: AssemblyVersion("1.4.0.0")]
+[assembly: AssemblyFileVersion("1.4.0.0")]
 
 public sealed partial class CCSaveCrypto
 {
