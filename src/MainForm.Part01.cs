@@ -93,13 +93,10 @@ public sealed partial class MainForm : Form
     readonly Button refreshButton = new Button();
     readonly Button guideButton = new Button();
     readonly Button themeButton = new Button();
-    readonly Button overviewApplyButton = new Button();
-    readonly Button statsApplyButton = new Button();
     readonly Button toggleButton = new Button();
     readonly Button characterBulkButton = new Button();
     readonly Button maxAllCharactersButton = new Button();
     readonly Label characterBulkStatus = new Label();
-    readonly Button clearButton = new Button();
     readonly Label balanceStateLabel = new Label();
     readonly Label balancePointsLabel = new Label();
     readonly Button balanceCharacterButton = new Button();
@@ -107,7 +104,6 @@ public sealed partial class MainForm : Form
     readonly ComboBox petCombo = new ComboBox();
     readonly Label weaponCurrentLabel = new Label();
     readonly Label petCurrentLabel = new Label();
-    readonly Button equipmentApplyButton = new Button();
     readonly ComboBox normalProgressCombo = new ComboBox();
     readonly ComboBox insaneProgressCombo = new ComboBox();
     readonly CheckBox insaneUnlockedCheck = new CheckBox();
