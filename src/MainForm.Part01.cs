@@ -12,6 +12,7 @@ public sealed partial class MainForm : Form
     const ulong SteamIdBase = 76561197960265728UL;
     const int AppId = 204360;
     const int CharacterRecordCount = 42;
+    const int OfficialCharacterCount = 32;
 
     static readonly string[] CharacterNames = new string[] {
         "Green Knight","Red Knight","Blue Knight","Orange Knight","Gray Knight",
@@ -19,7 +20,9 @@ public sealed partial class MainForm : Form
         "The King","The Brute","Snakey","Saracen","Royal Guard","Stove Face",
         "Peasant","Bear","Necromancer","Conehead","Civilian","Open-Faced Gray Knight",
         "Fire Demon","Skeleton","Iceskimo","Ninja","Cult Minion","Pink Knight",
-        "Blacksmith","Hatty Hattington","Paint Junior"
+        "Blacksmith","Hatty Hattington","Paint Junior",
+        "Custom Slot 01","Custom Slot 02","Custom Slot 03","Custom Slot 04","Custom Slot 05",
+        "Custom Slot 06","Custom Slot 07","Custom Slot 08","Custom Slot 09","Custom Slot 10"
     };
 
     static readonly string[] WeaponNames = new string[] {
@@ -60,6 +63,7 @@ public sealed partial class MainForm : Form
     SaveSession session;
 
     readonly ListView characterList = new ListView();
+    readonly Button workshopNameButton = new Button();
     readonly TextBox searchBox = new TextBox();
     readonly Label savePathLabel = new Label();
     readonly Label saveStateLabel = new Label();
@@ -127,8 +131,8 @@ public sealed partial class MainForm : Form
 
     public MainForm()
     {
-        Text = "Crasher Editor V1.3";
-        try { Icon exeIcon = Icon.ExtractAssociatedIcon(Application.ExecutablePath); if (exeIcon != null) this.Icon = exeIcon; } catch { }
+        Text = "Crasher Editor V1.4";
+        InitializeApplicationIcon();
         LoadThemePreference();
         SetThemeColors();
         StartPosition = FormStartPosition.CenterScreen;
